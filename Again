@@ -1,123 +1,119 @@
 local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
-local UIS = game:GetService("UserInputService")
+local Camera = Workspace.CurrentCamera
 
--- Function to bring unanchored parts to the selected player
-local function bringUnanchoredPartsToPlayer(targetPlayer)
-    if targetPlayer and targetPlayer.Character then
-        local targetPosition = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if targetPosition then
+-- UI SETUP --
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 200)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Frame.Active = true
+Frame.Draggable = true
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Text = "Control Panel BY: DYNO_LOL"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Parent = Frame
+
+local TargetTextbox = Instance.new("TextBox")
+TargetTextbox.PlaceholderText = "Enter Target Name"
+TargetTextbox.Size = UDim2.new(1, 0, 0, 30)
+TargetTextbox.Position = UDim2.new(0, 0, 0, 30)
+TargetTextbox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+TargetTextbox.TextColor3 = Color3.new(1, 1, 1)
+TargetTextbox.Parent = Frame
+
+local BringButton = Instance.new("TextButton")
+BringButton.Text = "Bring Unanchored Parts (OFF)"
+BringButton.Size = UDim2.new(1, 0, 0, 30)
+BringButton.Position = UDim2.new(0, 0, 0, 60)
+BringButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+BringButton.TextColor3 = Color3.new(1, 1, 1)
+BringButton.Parent = Frame
+
+local KillButton = Instance.new("TextButton")
+KillButton.Text = "Kill Target"
+KillButton.Size = UDim2.new(1, 0, 0, 30)
+KillButton.Position = UDim2.new(0, 0, 0, 90)
+KillButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+KillButton.TextColor3 = Color3.new(1, 1, 1)
+KillButton.Parent = Frame
+
+local bringActive = false
+local noclipActive = false
+
+-- FUNCTION: BRING UNANCHORED PARTS --
+local function bringUnanchoredParts(targetName)
+    local target = Players:FindFirstChild(targetName)
+    if target and target.Character then
+        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+        if targetRoot then
             for _, part in ipairs(Workspace:GetDescendants()) do
                 if part:IsA("Part") and not part.Anchored then
-                    part.Position = targetPosition.Position + Vector3.new(math.random(-5,5), math.random(2,5), math.random(-5,5))
-                    part.Velocity = Vector3.new(0, 10, 0) -- Add slight movement
+                    part.Position = targetRoot.Position + Vector3.new(math.random(-2,2), 2, math.random(-2,2))
                 end
             end
         end
     end
 end
 
--- Create UI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 350, 0, 180)
-Frame.Position = UDim2.new(0.5, -175, 0.5, -90)
-Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-Frame.BorderSizePixel = 2
-Frame.Active = true -- Allow dragging
-Frame.Parent = ScreenGui
-
-local Title = Instance.new("TextLabel")
-Title.Text = "ControlRoom V2 BY: DYNO_LOL"
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 18
-Title.Parent = Frame
-
-local TargetDropdown = Instance.new("TextButton")
-TargetDropdown.Text = "Select Target"
-TargetDropdown.Size = UDim2.new(1, 0, 0, 40)
-TargetDropdown.Position = UDim2.new(0, 0, 0, 40)
-TargetDropdown.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-TargetDropdown.TextColor3 = Color3.new(1, 1, 1)
-TargetDropdown.Font = Enum.Font.SourceSansBold
-TargetDropdown.TextSize = 16
-TargetDropdown.Parent = Frame
-
-local BringPartsButton = Instance.new("TextButton")
-BringPartsButton.Text = "Bring Unanchored Parts"
-BringPartsButton.Size = UDim2.new(1, 0, 0, 40)
-BringPartsButton.Position = UDim2.new(0, 0, 0, 90)
-BringPartsButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-BringPartsButton.TextColor3 = Color3.new(1, 1, 1)
-BringPartsButton.Font = Enum.Font.SourceSansBold
-BringPartsButton.TextSize = 16
-BringPartsButton.Parent = Frame
-
-local SelectedTarget = nil
-
--- Function for selecting a player target
-TargetDropdown.MouseButton1Click:Connect(function()
-    local playerList = {}
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            table.insert(playerList, player.Name)
+-- FUNCTION: PHYSICS KILL (THROW UP) --
+local function physicsKill(targetName)
+    local target = Players:FindFirstChild(targetName)
+    if target and target.Character then
+        local root = target.Character:FindFirstChild("HumanoidRootPart")
+        if root then
+            root.Velocity = Vector3.new(0, 500, 0) -- Throw target upwards
         end
     end
+end
 
-    if #playerList > 0 then
-        local chosenPlayer = playerList[math.random(1, #playerList)]
-        TargetDropdown.Text = "Target: " .. chosenPlayer
-        SelectedTarget = Players:FindFirstChild(chosenPlayer)
-    else
-        TargetDropdown.Text = "No Players Available"
+-- FUNCTION: REMOTE KILL (IF AVAILABLE) --
+local function remoteKill(targetName)
+    local killRemote = ReplicatedStorage:FindFirstChild("KillEvent") -- Change if needed
+    if killRemote then
+        killRemote:FireServer(targetName)
     end
-end)
+end
 
--- Button to bring unanchored parts to the selected player
-BringPartsButton.MouseButton1Click:Connect(function()
-    if SelectedTarget then
-        bringUnanchoredPartsToPlayer(SelectedTarget)
-    else
-        BringPartsButton.Text = "No Target Selected"
-        wait(1)
-        BringPartsButton.Text = "Bring Unanchored Parts"
-    end
-end)
-
--- **Draggable UI System**
-local dragging
-local dragInput
-local dragStart
-local startPos
-
-Frame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Frame.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
+-- FUNCTION: NOCLIP (PREVENT COLLISION WITH PARTS) --
+local function noclip()
+    while noclipActive do
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
             end
-        end)
+        end
+        task.wait()
+    end
+end
+
+-- BUTTON: TOGGLE BRING --
+BringButton.MouseButton1Click:Connect(function()
+    bringActive = not bringActive
+    BringButton.Text = bringActive and "Bring Unanchored Parts (ON)" or "Bring Unanchored Parts (OFF)"
+    
+    while bringActive do
+        bringUnanchoredParts(TargetTextbox.Text)
+        task.wait(1) -- Delay to prevent lag
     end
 end)
 
-Frame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
+-- BUTTON: KILL TARGET --
+KillButton.MouseButton1Click:Connect(function()
+    local targetName = TargetTextbox.Text
+    physicsKill(targetName)
+    remoteKill(targetName)
 end)
 
-UIS.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        local delta = input.Position - dragStart
-        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
+-- ACTIVATE NOCLIP --
+noclipActive = true
+task.spawn(noclip)
