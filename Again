@@ -1,0 +1,98 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Workspace = game:GetService("Workspace")
+
+-- Create UI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ControlRoomV2"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 150)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Text = "ControlRoom V2 BY: DYNO_LOL"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Parent = Frame
+
+-- Target Selection Dropdown
+local TargetDropdown = Instance.new("TextButton")
+TargetDropdown.Text = "Select Target"
+TargetDropdown.Size = UDim2.new(1, 0, 0, 30)
+TargetDropdown.Position = UDim2.new(0, 0, 0, 30)
+TargetDropdown.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+TargetDropdown.TextColor3 = Color3.new(1, 1, 1)
+TargetDropdown.Parent = Frame
+
+-- Kill Button
+local KillButton = Instance.new("TextButton")
+KillButton.Text = "Kill | Off"
+KillButton.Size = UDim2.new(1, 0, 0, 30)
+KillButton.Position = UDim2.new(0, 0, 0, 60)
+KillButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+KillButton.TextColor3 = Color3.new(1, 1, 1)
+KillButton.Parent = Frame
+
+-- Give Part to All Players Button
+local GivePartButton = Instance.new("TextButton")
+GivePartButton.Text = "T4rget to Everyone"
+GivePartButton.Size = UDim2.new(1, 0, 0, 30)
+GivePartButton.Position = UDim2.new(0, 0, 0, 90)
+GivePartButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+GivePartButton.TextColor3 = Color3.new(1, 1, 1)
+GivePartButton.Parent = Frame
+
+-- Variable for Target
+local SelectedTarget = nil
+
+-- Target Selection Function
+TargetDropdown.MouseButton1Click:Connect(function()
+    local playerList = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            table.insert(playerList, player.Name)
+        end
+    end
+    
+    if #playerList > 0 then
+        local chosenPlayer = playerList[math.random(1, #playerList)]
+        TargetDropdown.Text = "Target: " .. chosenPlayer
+        SelectedTarget = Players:FindFirstChild(chosenPlayer)
+    end
+end)
+
+-- Kill Target Function (Bypass with Physics)
+KillButton.MouseButton1Click:Connect(function()
+    if SelectedTarget and SelectedTarget.Character then
+        local humanoidRootPart = SelectedTarget.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            wait(math.random(1,3)) -- Random delay to look natural
+            humanoidRootPart.Velocity = Vector3.new(0, math.random(4000, 6000), 0) -- Launch target upwards
+            humanoidRootPart.Anchored = false
+        end
+    end
+end)
+
+-- Give Part to All Players Function
+GivePartButton.MouseButton1Click:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local humanoidRootPart = player.Character.HumanoidRootPart
+            local newPart = Instance.new("Part")
+            newPart.Size = Vector3.new(math.random(2,4), math.random(2,4), math.random(2,4))
+            newPart.Position = humanoidRootPart.Position + Vector3.new(0, 5, 0)
+            newPart.BrickColor = BrickColor.Random()
+            newPart.Parent = Workspace
+            newPart.Anchored = false
+            newPart.CanCollide = true
+            newPart.Velocity = Vector3.new(math.random(-10,10), math.random(10,20), math.random(-10,10))
+
+            -- Create physics effect to look natural
+            local BodyVelocity = Instance.new("BodyVelocity")
+            BodyVelocity.Velocity = Vector3.new(0, math.random(10,30), 0)
+            BodyVelocity.MaxForce = Vector3.new(math.h
