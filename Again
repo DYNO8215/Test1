@@ -1,119 +1,69 @@
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
+local ball = Instance.new("Part")  
+ball.Shape = Enum.PartType.Ball  
+ball.Size = Vector3.new(10, 10, 10)  
+ball.Position = Vector3.new(0, 5, 0)  
+ball.Anchored = false  
+ball.CanCollide = true  
+ball.Material = Enum.Material.SmoothPlastic  
+ball.Name = "Ball"  
+ball.Parent = game.Workspace  
 
--- UI SETUP --
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- **Create Bigger Hitbox**
+local hitbox = Instance.new("Part")
+hitbox.Size = ball.Size * 1.8  
+hitbox.Position = ball.Position
+hitbox.Anchored = false  
+hitbox.CanCollide = false  
+hitbox.Transparency = 1  
+hitbox.Name = "BallHitbox"
+hitbox.Parent = ball
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 300, 0, 200)
-Frame.Position = UDim2.new(0.5, -150, 0.5, -100)
-Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-Frame.Active = true
-Frame.Draggable = true
-Frame.Parent = ScreenGui
+-- **Attach Hitbox to Ball**
+local weld = Instance.new("WeldConstraint")
+weld.Part0 = ball
+weld.Part1 = hitbox
+weld.Parent = ball
 
-local Title = Instance.new("TextLabel")
-Title.Text = "Control Panel BY: DYNO_LOL"
-Title.Size = UDim2.new(1, 0, 0, 30)
-Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Parent = Frame
-
-local TargetTextbox = Instance.new("TextBox")
-TargetTextbox.PlaceholderText = "Enter Target Name"
-TargetTextbox.Size = UDim2.new(1, 0, 0, 30)
-TargetTextbox.Position = UDim2.new(0, 0, 0, 30)
-TargetTextbox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-TargetTextbox.TextColor3 = Color3.new(1, 1, 1)
-TargetTextbox.Parent = Frame
-
-local BringButton = Instance.new("TextButton")
-BringButton.Text = "Bring Unanchored Parts (OFF)"
-BringButton.Size = UDim2.new(1, 0, 0, 30)
-BringButton.Position = UDim2.new(0, 0, 0, 60)
-BringButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-BringButton.TextColor3 = Color3.new(1, 1, 1)
-BringButton.Parent = Frame
-
-local KillButton = Instance.new("TextButton")
-KillButton.Text = "Kill Target"
-KillButton.Size = UDim2.new(1, 0, 0, 30)
-KillButton.Position = UDim2.new(0, 0, 0, 90)
-KillButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-KillButton.TextColor3 = Color3.new(1, 1, 1)
-KillButton.Parent = Frame
-
-local bringActive = false
-local noclipActive = false
-
--- FUNCTION: BRING UNANCHORED PARTS --
-local function bringUnanchoredParts(targetName)
-    local target = Players:FindFirstChild(targetName)
-    if target and target.Character then
-        local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
-        if targetRoot then
-            for _, part in ipairs(Workspace:GetDescendants()) do
-                if part:IsA("Part") and not part.Anchored then
-                    part.Position = targetRoot.Position + Vector3.new(math.random(-2,2), 2, math.random(-2,2))
-                end
-            end
-        end
-    end
-end
-
--- FUNCTION: PHYSICS KILL (THROW UP) --
-local function physicsKill(targetName)
-    local target = Players:FindFirstChild(targetName)
-    if target and target.Character then
-        local root = target.Character:FindFirstChild("HumanoidRootPart")
+-- **Function to Find the Goal and Shoot Accurately**
+local function KickToGoal(player)
+    local character = player.Character
+    if character then
+        local root = character:FindFirstChild("HumanoidRootPart")
         if root then
-            root.Velocity = Vector3.new(0, 500, 0) -- Throw target upwards
-        end
-    end
-end
+            -- **Find the Goal Automatically**
+            local goal = game.Workspace:FindFirstChild("Goal")  -- Make sure the goal is named "Goal"
+            if goal then
+                local goalPosition = goal.Position + Vector3.new(0, 3, 0)  -- Aim slightly higher
+                local kickDirection = (goalPosition - ball.Position).unit  -- Aim towards goal
+                local power = 200  -- Adjust kick strength
 
--- FUNCTION: REMOTE KILL (IF AVAILABLE) --
-local function remoteKill(targetName)
-    local killRemote = ReplicatedStorage:FindFirstChild("KillEvent") -- Change if needed
-    if killRemote then
-        killRemote:FireServer(targetName)
-    end
-end
+                local velocity = Instance.new("BodyVelocity")
+                velocity.Velocity = kickDirection * power
+                velocity.MaxForce = Vector3.new(5000, 5000, 5000)  
+                velocity.Parent = ball
 
--- FUNCTION: NOCLIP (PREVENT COLLISION WITH PARTS) --
-local function noclip()
-    while noclipActive do
-        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
+                game:GetService("Debris"):AddItem(velocity, 0.3)  
             end
         end
-        task.wait()
     end
 end
 
--- BUTTON: TOGGLE BRING --
-BringButton.MouseButton1Click:Connect(function()
-    bringActive = not bringActive
-    BringButton.Text = bringActive and "Bring Unanchored Parts (ON)" or "Bring Unanchored Parts (OFF)"
-    
-    while bringActive do
-        bringUnanchoredParts(TargetTextbox.Text)
-        task.wait(1) -- Delay to prevent lag
-    end
-end)
+-- **Event for Multiplayer**
+local remoteEvent = Instance.new("RemoteEvent")
+remoteEvent.Name = "KickToGoalEvent"
+remoteEvent.Parent = game.ReplicatedStorage
 
--- BUTTON: KILL TARGET --
-KillButton.MouseButton1Click:Connect(function()
-    local targetName = TargetTextbox.Text
-    physicsKill(targetName)
-    remoteKill(targetName)
-end)
+remoteEvent.OnServerEvent:Connect(KickToGoal)
 
--- ACTIVATE NOCLIP --
-noclipActive = true
-task.spawn(noclip)
+-- **Local Script for Player Input**
+local function SetupPlayerInput(player)
+    local userInputService = game:GetService("UserInputService")
+
+    userInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
+            remoteEvent:FireServer()
+        end
+    end)
+end
+
+game.Players.PlayerAdded:Connect(SetupPlayerInput)
