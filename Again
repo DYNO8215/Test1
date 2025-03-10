@@ -1,69 +1,86 @@
-local ball = Instance.new("Part")  
-ball.Shape = Enum.PartType.Ball  
-ball.Size = Vector3.new(10, 10, 10)  
-ball.Position = Vector3.new(0, 5, 0)  
-ball.Anchored = false  
-ball.CanCollide = true  
-ball.Material = Enum.Material.SmoothPlastic  
-ball.Name = "Ball"  
-ball.Parent = game.Workspace  
+-- // UI Setup
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local Title = Instance.new("TextLabel")
+local TargetBox = Instance.new("TextBox")
+local KillButton = Instance.new("TextButton")
+local KillAllButton = Instance.new("TextButton")
 
--- **Create Bigger Hitbox**
-local hitbox = Instance.new("Part")
-hitbox.Size = ball.Size * 1.8  
-hitbox.Position = ball.Position
-hitbox.Anchored = false  
-hitbox.CanCollide = false  
-hitbox.Transparency = 1  
-hitbox.Name = "BallHitbox"
-hitbox.Parent = ball
+-- // Parent
+ScreenGui.Parent = game.CoreGui
+MainFrame.Parent = ScreenGui
+Title.Parent = MainFrame
+TargetBox.Parent = MainFrame
+KillButton.Parent = MainFrame
+KillAllButton.Parent = MainFrame
 
--- **Attach Hitbox to Ball**
-local weld = Instance.new("WeldConstraint")
-weld.Part0 = ball
-weld.Part1 = hitbox
-weld.Parent = ball
+-- // UI Properties
+ScreenGui.Name = "ControlRoomV2"
+MainFrame.Size = UDim2.new(0, 300, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MainFrame.BorderSizePixel = 2
+MainFrame.Draggable = true
 
--- **Function to Find the Goal and Shoot Accurately**
-local function KickToGoal(player)
-    local character = player.Character
-    if character then
-        local root = character:FindFirstChild("HumanoidRootPart")
-        if root then
-            -- **Find the Goal Automatically**
-            local goal = game.Workspace:FindFirstChild("Goal")  -- Make sure the goal is named "Goal"
-            if goal then
-                local goalPosition = goal.Position + Vector3.new(0, 3, 0)  -- Aim slightly higher
-                local kickDirection = (goalPosition - ball.Position).unit  -- Aim towards goal
-                local power = 200  -- Adjust kick strength
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Title.Text = "ControlR00m V2 By: DYNO_LOL"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 18
 
-                local velocity = Instance.new("BodyVelocity")
-                velocity.Velocity = kickDirection * power
-                velocity.MaxForce = Vector3.new(5000, 5000, 5000)  
-                velocity.Parent = ball
+TargetBox.Size = UDim2.new(1, -10, 0, 30)
+TargetBox.Position = UDim2.new(0, 5, 0, 35)
+TargetBox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+TargetBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetBox.Text = "Target here"
+TargetBox.ClearTextOnFocus = true
 
-                game:GetService("Debris"):AddItem(velocity, 0.3)  
+KillButton.Size = UDim2.new(1, -10, 0, 30)
+KillButton.Position = UDim2.new(0, 5, 0, 70)
+KillButton.BackgroundColor3 = Color3.fromRGB(0, 102, 255)
+KillButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+KillButton.Text = "Kill | Off"
+
+KillAllButton.Size = UDim2.new(1, -10, 0, 30)
+KillAllButton.Position = UDim2.new(0, 5, 0, 105)
+KillAllButton.BackgroundColor3 = Color3.fromRGB(255, 204, 0)
+KillAllButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+KillAllButton.Text = "Target to Everyone"
+
+-- // Kill Function with Teleport to Void and Physics Kill
+local function teleportToVoid(target)
+    if target and target.Character then
+        for _, part in pairs(target.Character:GetChildren()) do
+            if part:IsA("BasePart") then
+                part.Velocity = Vector3.new(0, -500, 0) -- Physics Kill
             end
         end
+        target.Character:MoveTo(Vector3.new(0, -500, 0)) -- Teleport to void
     end
 end
 
--- **Event for Multiplayer**
-local remoteEvent = Instance.new("RemoteEvent")
-remoteEvent.Name = "KickToGoalEvent"
-remoteEvent.Parent = game.ReplicatedStorage
-
-remoteEvent.OnServerEvent:Connect(KickToGoal)
-
--- **Local Script for Player Input**
-local function SetupPlayerInput(player)
-    local userInputService = game:GetService("UserInputService")
-
-    userInputService.InputBegan:Connect(function(input, gameProcessed)
-        if not gameProcessed and input.UserInputType == Enum.UserInputType.MouseButton1 then
-            remoteEvent:FireServer()
+local function findPlayer(name)
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        if string.lower(player.Name) == string.lower(name) then
+            return player
         end
-    end)
+    end
+    return nil
 end
 
-game.Players.PlayerAdded:Connect(SetupPlayerInput)
+KillButton.MouseButton1Click:Connect(function()
+    local targetName = TargetBox.Text
+    local targetPlayer = findPlayer(targetName)
+    if targetPlayer then
+        teleportToVoid(targetPlayer)
+    else
+        warn("Player not found!")
+    end
+end)
+
+KillAllButton.MouseButton1Click:Connect(function()
+    for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+        teleportToVoid(player)
+    end
+end)
